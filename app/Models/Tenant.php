@@ -38,11 +38,14 @@ class Tenant extends Model
         return $this->hasMany(TenantMember::class);
     }
 
+    /**
+     * Same pivot pattern as User->tenants() — no withTimestamps because
+     * tenant_members has no updated_at column.
+     */
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'tenant_members')
-            ->withPivot('role')
-            ->withTimestamps();
+            ->withPivot('role', 'created_at');
     }
 
     public function invites(): HasMany
