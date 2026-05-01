@@ -1,0 +1,5 @@
+# Add to deploy user's crontab: sudo -u deploy crontab -e
+#
+# Laravel scheduler — checks every minute for due tasks.
+# Phase 4 will register actual scheduled commands; for now it's a no-op.
+* * * * * cd /var/www/secuai && php artisan schedule:run >> /dev/null 2>&1
