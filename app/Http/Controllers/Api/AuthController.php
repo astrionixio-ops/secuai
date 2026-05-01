@@ -11,7 +11,6 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -39,7 +38,12 @@ class AuthController extends Controller
             'locale' => $data['locale'] ?? 'en',
         ]);
 
-        event(new Registered($user)); // triggers email verification
+        // Phase 1.1 will: dispatch the Registered event to trigger SMTP verification email.
+        // For Phase 1, we don't fire Registered to avoid the auto-mailer crashing on a
+        // missing 'verification.verify' route. Email verification is opt-in via env flag.
+        if (config('secuai.require_email_verification', false)) {
+            event(new Registered($user));
+        }
 
         $token = JWTAuth::fromUser($user);
 
@@ -68,8 +72,9 @@ class AuthController extends Controller
         /** @var User $user */
         $user = Auth::guard('api')->user();
 
-        // Block login until email verified, unless feature-flagged off.
-        if (!$user->hasVerifiedEmail() && config('secuai.require_email_verification', true)) {
+        // Block login until email verified, but only if the feature is on.
+        // Default is OFF in Phase 1 — flip ON in Phase 1.1 once email is wired up.
+        if (config('secuai.require_email_verification', false) && !$user->hasVerifiedEmail()) {
             Auth::guard('api')->logout();
             return response()->json([
                 'error' => 'email_not_verified',
@@ -109,7 +114,11 @@ class AuthController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
-        $tenants = $user->tenants()->get(['tenants.id', 'tenants.slug', 'tenants.name', 'tenants.plan']);
+
+        // IMPORTANT: don't pass a column list to ->get() on a belongsToMany
+        // relationship — Laravel drops pivot data when you do, and pivot->role
+        // ends up null. Just select all columns and project in the map below.
+        $tenants = $user->tenants()->get();
 
         return response()->json([
             'user' => $this->presentUser($user),
