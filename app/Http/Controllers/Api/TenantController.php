@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\TenantInvite;
 use App\Services\ActivityLogger;
 use App\Services\TenantService;
 use Illuminate\Http\JsonResponse;
@@ -22,9 +23,10 @@ class TenantController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-
-        // Don't constrain columns on belongsToMany ->get() — strips pivot data.
-        $rows = $user->tenants()->get();
+        $rows = $user->tenants()->get([
+            'tenants.id', 'tenants.slug', 'tenants.name',
+            'tenants.plan', 'tenants.subscription_status', 'tenants.trial_ends_at',
+        ]);
 
         return response()->json([
             'tenants' => $rows->map(fn ($t) => [
@@ -39,7 +41,7 @@ class TenantController extends Controller
         ]);
     }
 
-    /** POST /api/tenants — create workspace */
+    /** POST /api/tenants  — create workspace */
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([

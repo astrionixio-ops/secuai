@@ -3,15 +3,9 @@
 return [
     /*
      * Whether to require email verification before allowing login.
-     *
-     * Phase 1 default: FALSE (no SMTP wired up yet, would crash signup).
-     * Phase 1.1+ default: TRUE (after we add real email sending).
-     *
-     * To turn on now (and manually verify users via DB UPDATE), set
-     *   REQUIRE_EMAIL_VERIFICATION=true
-     * in .env.
+     * Recommended: true in production. Set false only for local dev with seeded users.
      */
-    'require_email_verification' => env('REQUIRE_EMAIL_VERIFICATION', false),
+    'require_email_verification' => env('REQUIRE_EMAIL_VERIFICATION', true),
 
     /*
      * Allow tenant resolution via subdomain (acme.secuai.com → tenant 'acme').
